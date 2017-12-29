@@ -29,9 +29,11 @@ import javafx.animation.Timeline;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.geometry.Insets;
 import javafx.scene.Cursor;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -49,8 +51,12 @@ public class PongPane extends Pane {
 	private static final int BALL_SIZE = 5;
 	private static final int INITIAL_PADDLE_SIZE = 60;
 
-	private static double BALL_SPEED = 60.0;
-	private static double PADDLE_SPEED = 60.0;
+	private static final double INITIAL_BALL_SPEED = 60.0;
+	private static final double INITIAL_PADDLE_SPEED = 60.0;
+	private static final double ACCELARATION = 1.05; // factor
+	
+	private double _ballSpeed = INITIAL_BALL_SPEED;
+	private double _paddleSpeed = INITIAL_PADDLE_SPEED;
 
 	private int _dx = 2;
 	private int _dy = 2;
@@ -71,12 +77,16 @@ public class PongPane extends Pane {
 	private Circle _ball;
 
 	// The center points of the moving ball
-	DoubleProperty _centerX = new SimpleDoubleProperty();
-	DoubleProperty _centerY = new SimpleDoubleProperty();
+	private DoubleProperty _centerX = new SimpleDoubleProperty();
+	private DoubleProperty _centerY = new SimpleDoubleProperty();
 
 	// The position of the paddles
-	DoubleProperty _leftPaddleY = new SimpleDoubleProperty();
-	DoubleProperty _rightPaddleY = new SimpleDoubleProperty();
+	private DoubleProperty _leftPaddleY = new SimpleDoubleProperty();
+	private DoubleProperty _rightPaddleY = new SimpleDoubleProperty();
+
+	// helper for dragging of paddles
+	protected double _initialTranslateY;
+	protected double _initialDragAnchor;
 
 	/**
 	 * The pane where the playing takes place
@@ -86,7 +96,7 @@ public class PongPane extends Pane {
 		this.setBackground(new Background(
 				new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
 		_sounds = new Sounds();
-//		_sounds.soundOff();
+		//		_sounds.soundOff();
 	}
 
 	/**
@@ -111,17 +121,50 @@ public class PongPane extends Pane {
 		double right = maxX - 20 - paddleWidth;
 		double startPos = (maxY-minY)/2 - _paddleSize/2;
 
+		// enable dragging of paddles with the mouse
+		EventHandler<MouseEvent> eventHandler = new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				final Rectangle source = (Rectangle) event.getSource();
+				final EventType<? extends MouseEvent> eventType = event.getEventType();
+				// only the two paddles have these handler so we can do the simple if
+				DoubleProperty yProp = source.equals(_leftPaddle) ? _leftPaddleY : _rightPaddleY;
+				// handle the three different mouse events
+				if (eventType.equals(MouseEvent.MOUSE_PRESSED) ) {
+					source.setCursor(Cursor.CLOSED_HAND);
+					_initialTranslateY = source.getTranslateY();
+					_initialDragAnchor = event.getSceneY();
+				} else if (eventType.equals(MouseEvent.MOUSE_DRAGGED) ) {
+					double dragY = event.getSceneY() - _initialDragAnchor;
+					// don't leave area
+					if (_initialTranslateY + dragY > source.getParent().getBoundsInLocal().getMinY() 
+							&& _initialTranslateY + dragY + _paddleSize < source.getParent().getBoundsInLocal().getMaxY() ) {
+						yProp.setValue(_initialTranslateY + dragY);
+					}
+				} else if (eventType.equals(MouseEvent.MOUSE_RELEASED) ) {
+					source.setCursor(Cursor.OPEN_HAND);
+				}
+			};
+		};
+
 		_leftPaddle = new Rectangle(paddleWidth,_paddleSize, Color.WHITE);
 		_leftPaddle.setTranslateX(left);
 		_leftPaddleY.set(startPos);
-		_leftPaddle.setCursor(Cursor.MOVE);
+		_leftPaddle.setCursor(Cursor.OPEN_HAND);
 		_leftPaddle.translateYProperty().bind(_leftPaddleY);
+		_leftPaddle.addEventHandler(MouseEvent.MOUSE_PRESSED, eventHandler);
+		_leftPaddle.addEventHandler(MouseEvent.MOUSE_DRAGGED, eventHandler);
+		_leftPaddle.addEventHandler(MouseEvent.MOUSE_RELEASED, eventHandler);
 		this.getChildren().add(_leftPaddle);
 
 		_rightPaddle = new Rectangle(paddleWidth,_paddleSize, Color.WHITE);
 		_rightPaddle.setTranslateX(right);
 		_rightPaddleY.set(startPos);
+		_rightPaddle.setCursor(Cursor.OPEN_HAND);
 		_rightPaddle.translateYProperty().bind(_rightPaddleY);
+		_rightPaddle.addEventHandler(MouseEvent.MOUSE_PRESSED, eventHandler);
+		_rightPaddle.addEventHandler(MouseEvent.MOUSE_DRAGGED, eventHandler);
+		_rightPaddle.addEventHandler(MouseEvent.MOUSE_RELEASED, eventHandler);
 		this.getChildren().add(_rightPaddle);
 
 		// set key event to set move flag
@@ -153,7 +196,7 @@ public class PongPane extends Pane {
 		_paddleAnimation = new Timeline();
 		_paddleAnimation.setCycleCount(Timeline.INDEFINITE);
 		KeyFrame movePaddle = 
-				new KeyFrame(Duration.seconds(1/PADDLE_SPEED), e -> { movePaddles();	});
+				new KeyFrame(Duration.seconds(1/_paddleSpeed), e -> { movePaddles();	});
 		_paddleAnimation.getKeyFrames().add(movePaddle);
 		_paddleAnimation.play();
 	}
@@ -194,7 +237,7 @@ public class PongPane extends Pane {
 		_ballAnimation = new Timeline();
 		_ballAnimation.setCycleCount(Timeline.INDEFINITE);
 		KeyFrame moveBall = 
-				new KeyFrame(Duration.seconds(1/BALL_SPEED), e -> {	moveBall();	});
+				new KeyFrame(Duration.seconds(1/_ballSpeed), e -> {	moveBall();	});
 		_ballAnimation.getKeyFrames().add(moveBall);
 	}
 
@@ -219,6 +262,10 @@ public class PongPane extends Pane {
 		// hit left or right wall
 		if (xMin < 0 || xMax > this.getWidth()) {
 			_sounds.playClip(Clips.WALL);
+			_ballSpeed *= INITIAL_BALL_SPEED;
+			_paddleSpeed *= INITIAL_PADDLE_SPEED;
+			_ballAnimation.setRate(1.0);
+			_paddleAnimation.setRate(1.0);
 			_dx *= -1;
 		}
 
@@ -231,13 +278,22 @@ public class PongPane extends Pane {
 		// hit on a paddle 
 		if (_dx < 0 && _ball.intersects(_leftPaddle.getBoundsInParent())) { // _dx < 0 && 
 			_sounds.playClip(Clips.LEFT);
+			_ballSpeed *= ACCELARATION;
+			_paddleSpeed *= ACCELARATION;
+			_ballAnimation.setRate(_ballAnimation.getRate()*ACCELARATION);
+			_paddleAnimation.setRate(_paddleAnimation.getRate()*ACCELARATION);
 			_dx *= -1;
 		} else if (_dx > 0 && _ball.intersects(_rightPaddle.getBoundsInParent())) { // _dx > 0 && 
 			_sounds.playClip(Clips.RIGHT);
+			_ballSpeed *= ACCELARATION;
+			_paddleSpeed *= ACCELARATION;
+			_ballAnimation.setRate(_ballAnimation.getRate()*ACCELARATION);
+			_paddleAnimation.setRate(_paddleAnimation.getRate()*ACCELARATION);
 			_dx *= -1;
 		} 
 
 	}
+
 
 
 

@@ -30,8 +30,15 @@ import com.sun.javafx.application.PlatformImpl;
 import fko.pong.Pong;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
@@ -92,7 +99,13 @@ public class PongUI extends Application {
 		
 		// Create root pane for the Scene
 		BorderPane _root = new BorderPane(pongpane);
-
+		_root.setBackground(new Background(
+				new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
+		
+		Text text = new Text("SPACE=Start ESC=Stop P=Pause Q=left up A=left down UP=right up DOWN=right down");
+		_root.setBottom(text);
+		BorderPane.setAlignment(text, Pos.CENTER);
+		
 		// Create the Scene
 		Scene scene = new Scene(_root, 600, 400);
 
@@ -114,7 +127,8 @@ public class PongUI extends Application {
 		// now show the window
 		_primaryStage.show();
 
-		pongpane.startGame();
+		// initialize Game
+		pongpane.initialize();
 	}
 
 	/**

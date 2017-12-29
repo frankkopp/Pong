@@ -51,13 +51,13 @@ import javafx.scene.text.Text;
 import javafx.util.Duration;
 
 /**
+ * The PongPane handles the playing and screen output.<br>
+ * It builds a board with two paddles, a ball a two scores.<br>
+ * It adds controls by keyboard and mouse and also adds sound events.<br>
  * @author Frank Kopp
  */
 public class PongPane extends Pane {
 
-	/**
-	 * 
-	 */
 	private static final int BALL_MOVE_INCREMENTS = 2;
 	private static final int BALL_SIZE = 5;
 	private static final int INITIAL_PADDLE_SIZE = 60;
@@ -112,7 +112,7 @@ public class PongPane extends Pane {
 	private StringProperty _rightPlayerPoints = new SimpleStringProperty();
 
 	/**
-	 * The pane where the playing takes place
+	 * The pane where the playing takes place.
 	 */
 	public PongPane() {
 		super();
@@ -124,14 +124,15 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Initializes the screen by adding a ball, two paddles and two scores.<br>
+	 * Also adds the key handler for movements. 
 	 */
 	public void initialize() {
 		addBall();
 		addPaddles();
 		addScore();
 
-		// set key event to set move flag
+		// set key event to control game and move flags
 		this.getScene().setOnKeyPressed(new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent event) {
@@ -168,41 +169,45 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Adds the display of the score for each player.
 	 */
 	private void addScore() {
+		// create Text for each score 
 		Text leftScore = new Text();
 		Text rightScore = new Text();
 		this.getChildren().add(leftScore);
 		this.getChildren().add(rightScore);
 		
-		System.out.println(Font.getFamilies().toString());
-		
+		// positioning helpers
 		double middle = this.getWidth() / 2;
 		final int offsetFromMiddle = 150;
 		
+		// layout helpers
 		final Font font = Font.font("OCR A Std", FontWeight.BOLD, FontPosture.REGULAR, 40.0);
 		final int locationY = 50;
 		final Color color = Color.WHITE;
 		
+		// left
 		leftScore.setFont(font);
 		leftScore.setY(locationY);
 		leftScore.setFill(color);
-
+		// right
 		rightScore.setFont(font);
 		rightScore.setY(locationY);
 		rightScore.setFill(color);
 		
+		// position score text
 		leftScore.setX(middle - offsetFromMiddle - leftScore.getBoundsInParent().getWidth());
 		rightScore.setX(middle + offsetFromMiddle);
 		
+		// bind text to score property
 		leftScore.textProperty().bind(_leftPlayerPoints);
 		rightScore.textProperty().bind(_rightPlayerPoints);
 	}
 
 	/**
 	 * Starts the game with the ball from either of the two sides.
-	 * The side is chosen randomly.
+	 * The side and start position is chosen randomly.
 	 */
 	public void startGame() {
 		// if game is running do nothing
@@ -233,7 +238,7 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Stops the game. Ignored if game not running.
 	 */
 	public void stopGame() {
 		_ball.setVisible(false); 
@@ -243,7 +248,7 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Pause the game. Ignored if game not running or already paused.
 	 */
 	public void pauseGame() {
 		if (_gameRunning && _gamePaused) return;
@@ -252,7 +257,7 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Resume a paused game. Ignored if game not running or game not paused.
 	 */
 	public void resumeGame() {
 		if (_gameRunning && !_gamePaused) return;
@@ -261,7 +266,8 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Adding the two player paddles to the screen.<br>
+	 * Also adding a mouse handler to the paddles.
 	 */
 	private void addPaddles() {
 		double minX = this.getBoundsInLocal().getMinX();
@@ -328,7 +334,7 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Called by the Timeline animation event to move the paddles.
 	 */
 	private void movePaddles() {
 		if (leftPaddleUp 
@@ -350,7 +356,7 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Adds a ball to the screen. Not visible when game not running. 
 	 */
 	private void addBall() {
 		_ball = new Circle(BALL_SIZE,  Color.WHITE);
@@ -369,7 +375,7 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * The move per frame
+	 * Called by the Timeline animation event to move the ball.
 	 */
 	private void moveBall() {
 		_ballCenterX.setValue(_ballCenterX.getValue() + _dx);
@@ -378,7 +384,9 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Checks if the ball has hit a wall, a paddle or has left through left or right wall.<br>
+	 * If left through left or right wall we have a goal and the score is increased and the ball resetted on the
+	 * scorer's side.   
 	 */
 	private void checkCollision() {
 		double xMin = _ball.getBoundsInParent().getMinX();
@@ -423,7 +431,7 @@ public class PongPane extends Pane {
 	}
 
 	/**
-	 * 
+	 * Increases score for the player who scored and resets the ball to the scorer's side. 
 	 * @param playerScored
 	 */
 	private void goal(Player playerScored) {

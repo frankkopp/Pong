@@ -102,6 +102,7 @@ public class PongUI extends Application {
 		_root.setBackground(new Background(
 				new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
 		
+		// add game how-to
 		Text text = new Text("SPACE=Start ESC=Stop P=Pause Q=left up A=left down UP=right up DOWN=right down");
 		_root.setBottom(text);
 		BorderPane.setAlignment(text, Pos.CENTER);

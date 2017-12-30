@@ -27,7 +27,11 @@ import fko.pong.Player;
 import fko.pong.ui.Sounds.Clips;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -56,7 +60,7 @@ import javafx.util.Duration;
  * It adds controls by keyboard and mouse and also adds sound events.<br>
  * @author Frank Kopp
  */
-public class PongPane extends Pane {
+public class PongPane extends Pane implements InvalidationListener {
 
 	private static final int BALL_MOVE_INCREMENTS = 2;
 	private static final int BALL_SIZE = 5;
@@ -69,8 +73,8 @@ public class PongPane extends Pane {
 	private double _ballSpeed = INITIAL_BALL_SPEED;
 	private double _paddleSpeed = INITIAL_PADDLE_SPEED;
 
-	private int _dx = BALL_MOVE_INCREMENTS;
-	private int _dy = BALL_MOVE_INCREMENTS;
+	private double _speedX = BALL_MOVE_INCREMENTS;
+	private double _speedY = BALL_MOVE_INCREMENTS;
 
 	private double _paddleSize = INITIAL_PADDLE_SIZE;
 
@@ -108,9 +112,16 @@ public class PongPane extends Pane {
 	private boolean _gameRunning = false;
 	
 	// the text for the points
-	private StringProperty _leftPlayerPoints = new SimpleStringProperty();
-	private StringProperty _rightPlayerPoints = new SimpleStringProperty();
+	private StringProperty _leftPlayerPoints = new SimpleStringProperty("0");
+	private StringProperty _rightPlayerPoints = new SimpleStringProperty("0");
 
+	// text to display options which can be turned on and off
+	private StringProperty _optionsTextString = new SimpleStringProperty("Options: ");
+
+	// Options
+	private BooleanProperty _soundOn 	= new SimpleBooleanProperty(false);
+	private BooleanProperty _anglePaddle = new SimpleBooleanProperty(true);
+	
 	/**
 	 * The pane where the playing takes place.
 	 */
@@ -120,23 +131,34 @@ public class PongPane extends Pane {
 				new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
 
 		_sounds = new Sounds();
-		//_sounds.soundOff();
+		
+		// initialize options listener
+		_soundOn.addListener(this);
+		_anglePaddle.addListener(this);
+		updateOptions();
 	}
 
 	/**
 	 * Initializes the screen by adding a ball, two paddles and two scores.<br>
 	 * Also adds the key handler for movements. 
+	 * @param optionsText 
 	 */
-	public void initialize() {
+	public void initialize(Text optionsText) {
+		
+		optionsText.textProperty().bind(_optionsTextString);
+		
 		addBall();
 		addPaddles();
 		addScore();
+		
+		updateOptions();
 
 		// set key event to control game and move flags
 		this.getScene().setOnKeyPressed(new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent event) {
 				switch (event.getCode()) {
+				// game control
 				case SPACE: startGame();	 break;
 				case ESCAPE: stopGame(); break;
 				case P: {
@@ -146,6 +168,10 @@ public class PongPane extends Pane {
 					}
 					break;
 				}
+				// options control
+				case DIGIT1: _soundOn.set(!_soundOn.get());; break;
+				case DIGIT2: _anglePaddle.set(!_anglePaddle.get()); break;
+				// paddle control
 				case Q: 		leftPaddleUp = true; break;
 				case A:		leftPaddleDown = true; break;
 				case UP:	 	rightPaddleUp = true; break;
@@ -166,6 +192,33 @@ public class PongPane extends Pane {
 				}
 			}
 		}); 
+	}
+
+	/**
+	 * Is called by the option property objects whenever they change 
+	 * @see javafx.beans.InvalidationListener#invalidated(javafx.beans.Observable)
+	 */
+	@Override
+	public void invalidated(Observable observable) {
+		updateOptions();
+	}
+
+	/**
+	 * Updates the text showing which options are active
+	 */
+	private void updateOptions() {
+		// sound
+		if (_soundOn.get()) {
+			_sounds.soundOn();
+		} else {
+			_sounds.soundOff();
+		}		
+		
+		// Options Text
+		StringBuilder sb = new StringBuilder("Options: ");
+		sb.append("Sound (1) ").append(_soundOn.get() ? "ON" : "OFF").append("  ");
+		sb.append("Angling Paddle (2) ").append(_anglePaddle.get() ? "ON" : "OFF").append("  ");
+		_optionsTextString.set(sb.toString());
 	}
 
 	/**
@@ -222,15 +275,15 @@ public class PongPane extends Pane {
 		// start from either side of the board
 		if (Math.random() < 0.5) {
 			_ballCenterX.setValue(0.0+_ball.getBoundsInParent().getWidth());	
-			_dx = BALL_MOVE_INCREMENTS;
+			_speedX = BALL_MOVE_INCREMENTS;
 		} else {
 			_ballCenterX.setValue(this.getWidth()-_ball.getBoundsInParent().getWidth());
-			_dx = -BALL_MOVE_INCREMENTS;
+			_speedX = -BALL_MOVE_INCREMENTS;
 		}
 		// random y
 		_ballCenterY.setValue(Math.random() * this.getHeight());
 		// random direction
-		_dy = BALL_MOVE_INCREMENTS * (Math.random() < 0.5 ? 1 : -1);
+		_speedY = BALL_MOVE_INCREMENTS * (Math.random() < 0.5 ? 1 : -1);
 		_ball.setVisible(true); 
 		_ballAnimation.play();
 		_gamePaused = false;
@@ -378,8 +431,8 @@ public class PongPane extends Pane {
 	 * Called by the Timeline animation event to move the ball.
 	 */
 	private void moveBall() {
-		_ballCenterX.setValue(_ballCenterX.getValue() + _dx);
-		_ballCenterY.setValue(_ballCenterY.getValue() + _dy);
+		_ballCenterX.setValue(_ballCenterX.getValue() + _speedX);
+		_ballCenterY.setValue(_ballCenterY.getValue() + _speedY);
 		checkCollision(); // reverses _dx and/or _dy if collision
 	}
 
@@ -401,31 +454,58 @@ public class PongPane extends Pane {
 			_paddleSpeed *= INITIAL_PADDLE_SPEED;
 			_ballAnimation.setRate(1.0);
 			_paddleAnimation.setRate(1.0);
-			_dx *= -1;
+			_speedX *= -1;
 			goal(xMin < 0 ? _playerRight : _playerLeft);
 		}
 
 		// hit top or bottom wall
 		if (yMin < 0 || yMax > this.getHeight()) {
 			_sounds.playClip(Clips.WALL);
-			_dy *= -1;
+			_speedY *= -1;
 		}
 
 		// hit on a paddle 
-		if (_dx < 0 && _ball.intersects(_leftPaddle.getBoundsInParent())) { // _dx < 0 && 
+		if (_speedX < 0 && _ball.intersects(_leftPaddle.getBoundsInParent())) { // _dx < 0 && 
 			_sounds.playClip(Clips.LEFT);
 			_ballSpeed *= ACCELARATION;
 			_paddleSpeed *= ACCELARATION;
 			_ballAnimation.setRate(_ballAnimation.getRate()*ACCELARATION);
 			_paddleAnimation.setRate(_paddleAnimation.getRate()*ACCELARATION);
-			_dx *= -1;
-		} else if (_dx > 0 && _ball.intersects(_rightPaddle.getBoundsInParent())) { // _dx > 0 && 
+			if (_anglePaddle.get()) {
+				// center = 0.0, top=-1-0, bottom=+1.0
+				double hitPos = (_ballCenterY.doubleValue() - _leftPaddleY.doubleValue()) / _paddleSize;
+				hitPos = (hitPos-0.5) * 2 * Math.signum(_speedY);
+				
+				System.out.println("Y 1: "+_speedY+" hitPos: "+hitPos);
+				_speedY = _speedY * (1+hitPos);
+				System.out.println("Y 2: "+_speedY);		
+				
+				_speedX *= -1;
+			} else {
+				// just changed direction - angle is always constant
+				_speedX *= -1;
+			}
+		} else if (_speedX > 0 && _ball.intersects(_rightPaddle.getBoundsInParent())) { // _dx > 0 && 
 			_sounds.playClip(Clips.RIGHT);
 			_ballSpeed *= ACCELARATION;
 			_paddleSpeed *= ACCELARATION;
 			_ballAnimation.setRate(_ballAnimation.getRate()*ACCELARATION);
 			_paddleAnimation.setRate(_paddleAnimation.getRate()*ACCELARATION);
-			_dx *= -1;
+			if (_anglePaddle.get()) {
+				// center = 0, top=-0.5, bottom=+0.5
+				double hitPos = (_ballCenterY.doubleValue()-_rightPaddleY.doubleValue())  / _paddleSize;
+				hitPos = (hitPos-0.5) * 2 * Math.signum(_speedY);
+				
+				System.out.println("Y 1: "+_speedY+" hitPos: "+hitPos);
+				_speedY = _speedY * (1+hitPos); 
+				System.out.println("Y 2: "+_speedY);
+				
+				_speedX *= -1;
+			} else {
+				// just changed direction - angle is always constant
+				_speedX *= -1;
+			}
+
 		} 
 
 	}
@@ -436,24 +516,26 @@ public class PongPane extends Pane {
 	 */
 	private void goal(Player playerScored) {
 		// hide ball
+		_ballAnimation.pause();
 		_ball.setVisible(false);
+		
 		// start from either side of the board
 		if (playerScored.equals(_playerLeft)) {
 			_ballCenterX.setValue(0.0+_ball.getBoundsInParent().getWidth());	
-			_dx = BALL_MOVE_INCREMENTS;
+			_speedX = BALL_MOVE_INCREMENTS;
 			_playerLeft._points++;
 			_leftPlayerPoints.setValue(String.valueOf(_playerLeft._points));
 		} else {
 			_ballCenterX.setValue(this.getWidth()-_ball.getBoundsInParent().getWidth());
-			_dx = -BALL_MOVE_INCREMENTS;
+			_speedX = -BALL_MOVE_INCREMENTS;
 			_playerRight._points++;
 			_rightPlayerPoints.setValue(String.valueOf(_playerRight._points));
 		}
 		// random y
 		_ballCenterY.setValue(Math.random() * this.getHeight());
 		// random direction
-		_dy = BALL_MOVE_INCREMENTS * (Math.random() < 0.5 ? 1 : -1);
-		_ballAnimation.pause();
+		_speedY = BALL_MOVE_INCREMENTS * (Math.random() < 0.5 ? 1 : -1);
+		
 		// short break
 		try { Thread.sleep(500);
 		} catch (InterruptedException e) {}

@@ -37,6 +37,7 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -96,17 +97,28 @@ public class PongUI extends Application {
 
 		// pong pane
 		PongPane pongpane = new PongPane();
-		
+
 		// Create root pane for the Scene
 		BorderPane _root = new BorderPane(pongpane);
 		_root.setBackground(new Background(
 				new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
-		
+
+
+		// add a two line hbox for how-to and options
+		VBox vBox = new VBox();
+		vBox.setAlignment(Pos.CENTER);
+
 		// add game how-to
-		Text text = new Text("SPACE=Start ESC=Stop P=Pause Q=left up A=left down UP=right up DOWN=right down");
-		_root.setBottom(text);
-		BorderPane.setAlignment(text, Pos.CENTER);
+		Text howtoText = new Text("SPACE=Start ESC=Stop P=Pause Q=left up A=left down UP=right up DOWN=right down");
+		vBox.getChildren().add(howtoText);
 		
+		// add game options
+		Text optionsText = new Text("Options");
+		vBox.getChildren().add(optionsText);
+
+		_root.setBottom(vBox);
+		BorderPane.setAlignment(vBox, Pos.CENTER);
+
 		// Create the Scene
 		Scene scene = new Scene(_root, 600, 400);
 
@@ -116,9 +128,9 @@ public class PongUI extends Application {
 		_primaryStage.setMaxWidth(600);
 		_primaryStage.setMaxHeight(380);
 
-		// pu the scene on the primary stage
+		// put the scene on the primary stage
 		_primaryStage.setScene(scene);
-		
+
 		// closeAction - close through close action
 		scene.getWindow().setOnCloseRequest(event -> {
 			close_action(event);
@@ -129,7 +141,7 @@ public class PongUI extends Application {
 		_primaryStage.show();
 
 		// initialize Game
-		pongpane.initialize();
+		pongpane.initialize(optionsText);
 	}
 
 	/**
@@ -152,11 +164,11 @@ public class PongUI extends Application {
 	public static Stage getPrimaryStage() {
 		return _primaryStage;
 	}
-	
+
 	/* ********************************
 	 * ACTIONS
 	 * ********************************/
-	
+
 	/**
 	 * @param event
 	 */

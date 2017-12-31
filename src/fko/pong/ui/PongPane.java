@@ -110,7 +110,7 @@ public class PongPane extends Pane implements InvalidationListener {
 	// status of game
 	private boolean _gamePaused = false;
 	private boolean _gameRunning = false;
-	
+
 	// the text for the points
 	private StringProperty _leftPlayerPoints = new SimpleStringProperty("0");
 	private StringProperty _rightPlayerPoints = new SimpleStringProperty("0");
@@ -121,7 +121,7 @@ public class PongPane extends Pane implements InvalidationListener {
 	// Options
 	private BooleanProperty _soundOn 	= new SimpleBooleanProperty(false);
 	private BooleanProperty _anglePaddle = new SimpleBooleanProperty(true);
-	
+
 	/**
 	 * The pane where the playing takes place.
 	 */
@@ -131,8 +131,8 @@ public class PongPane extends Pane implements InvalidationListener {
 				new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
 
 		_sounds = new Sounds();
-		
-		// initialize options listener
+
+		// initialize options listener - any time an option property is changed this.invalidated() is called
 		_soundOn.addListener(this);
 		_anglePaddle.addListener(this);
 		updateOptions();
@@ -144,13 +144,13 @@ public class PongPane extends Pane implements InvalidationListener {
 	 * @param optionsText 
 	 */
 	public void initialize(Text optionsText) {
-		
+
 		optionsText.textProperty().bind(_optionsTextString);
-		
+
 		addBall();
 		addPaddles();
 		addScore();
-		
+
 		updateOptions();
 
 		// set key event to control game and move flags
@@ -213,7 +213,7 @@ public class PongPane extends Pane implements InvalidationListener {
 		} else {
 			_sounds.soundOff();
 		}		
-		
+
 		// Options Text
 		StringBuilder sb = new StringBuilder("Options: ");
 		sb.append("Sound (1) ").append(_soundOn.get() ? "ON" : "OFF").append("  ");
@@ -230,16 +230,16 @@ public class PongPane extends Pane implements InvalidationListener {
 		Text rightScore = new Text();
 		this.getChildren().add(leftScore);
 		this.getChildren().add(rightScore);
-		
+
 		// positioning helpers
 		double middle = this.getWidth() / 2;
 		final int offsetFromMiddle = 150;
-		
+
 		// layout helpers
 		final Font font = Font.font("OCR A Std", FontWeight.BOLD, FontPosture.REGULAR, 40.0);
 		final int locationY = 50;
 		final Color color = Color.WHITE;
-		
+
 		// left
 		leftScore.setFont(font);
 		leftScore.setY(locationY);
@@ -248,11 +248,11 @@ public class PongPane extends Pane implements InvalidationListener {
 		rightScore.setFont(font);
 		rightScore.setY(locationY);
 		rightScore.setFill(color);
-		
+
 		// position score text
 		leftScore.setX(middle - offsetFromMiddle - leftScore.getBoundsInParent().getWidth());
 		rightScore.setX(middle + offsetFromMiddle);
-		
+
 		// bind text to score property
 		leftScore.textProperty().bind(_leftPlayerPoints);
 		rightScore.textProperty().bind(_rightPlayerPoints);
@@ -268,10 +268,10 @@ public class PongPane extends Pane implements InvalidationListener {
 		// new players
 		_playerLeft = new Player("Left");
 		_playerRight = new Player("Right");
-		
+
 		_leftPlayerPoints.setValue(String.valueOf(_playerLeft._points));
 		_rightPlayerPoints.setValue(String.valueOf(_playerRight._points));
-		
+
 		// start from either side of the board
 		if (Math.random() < 0.5) {
 			_ballCenterX.setValue(0.0+_ball.getBoundsInParent().getWidth());	
@@ -464,43 +464,33 @@ public class PongPane extends Pane implements InvalidationListener {
 			_speedY *= -1;
 		}
 
-		// hit on a paddle 
-		if (_speedX < 0 && _ball.intersects(_leftPaddle.getBoundsInParent())) { // _dx < 0 && 
+		// hit on a paddle - left
+		if (_speedX < 0 && _ball.intersects(_leftPaddle.getBoundsInParent())) {
 			_sounds.playClip(Clips.LEFT);
 			_ballSpeed *= ACCELARATION;
 			_paddleSpeed *= ACCELARATION;
 			_ballAnimation.setRate(_ballAnimation.getRate()*ACCELARATION);
 			_paddleAnimation.setRate(_paddleAnimation.getRate()*ACCELARATION);
+			// new direction
+			
 			if (_anglePaddle.get()) {
-				// center = 0.0, top=-1-0, bottom=+1.0
-				double hitPos = (_ballCenterY.doubleValue() - _leftPaddleY.doubleValue()) / _paddleSize;
-				hitPos = (hitPos-0.5) * 2 * Math.signum(_speedY);
-				
-				System.out.println("Y 1: "+_speedY+" hitPos: "+hitPos);
-				_speedY = _speedY * (1+hitPos);
-				System.out.println("Y 2: "+_speedY);		
-				
-				_speedX *= -1;
+				DoubleProperty paddle = _leftPaddleY;
+				newVector(paddle);
 			} else {
 				// just changed direction - angle is always constant
 				_speedX *= -1;
 			}
-		} else if (_speedX > 0 && _ball.intersects(_rightPaddle.getBoundsInParent())) { // _dx > 0 && 
+		// hit on a paddle - right
+		} else if (_speedX > 0 && _ball.intersects(_rightPaddle.getBoundsInParent())) {
 			_sounds.playClip(Clips.RIGHT);
 			_ballSpeed *= ACCELARATION;
 			_paddleSpeed *= ACCELARATION;
 			_ballAnimation.setRate(_ballAnimation.getRate()*ACCELARATION);
 			_paddleAnimation.setRate(_paddleAnimation.getRate()*ACCELARATION);
+			// new direction
 			if (_anglePaddle.get()) {
-				// center = 0, top=-0.5, bottom=+0.5
-				double hitPos = (_ballCenterY.doubleValue()-_rightPaddleY.doubleValue())  / _paddleSize;
-				hitPos = (hitPos-0.5) * 2 * Math.signum(_speedY);
-				
-				System.out.println("Y 1: "+_speedY+" hitPos: "+hitPos);
-				_speedY = _speedY * (1+hitPos); 
-				System.out.println("Y 2: "+_speedY);
-				
-				_speedX *= -1;
+				DoubleProperty paddle = _rightPaddleY;
+				newVector(paddle);
 			} else {
 				// just changed direction - angle is always constant
 				_speedX *= -1;
@@ -511,6 +501,43 @@ public class PongPane extends Pane implements InvalidationListener {
 	}
 
 	/**
+	 * @param paddle
+	 */
+	public void newVector(DoubleProperty paddle) {
+		
+		System.out.println("Old SpeedY: "+_speedY);
+		System.out.println("Old SpeedX: "+_speedX);
+		
+		// calculate where the ball hit the paddle
+		// center = 0.0, top=-1-0, bottom=+1.0
+		double hitPos = (_ballCenterY.doubleValue() - paddle.doubleValue()) / _paddleSize;
+		hitPos = (hitPos-0.5) * 2 * Math.signum(_speedY);
+		System.out.println("HitPos: "+hitPos);
+
+		/*
+		 * This leads to either convergence to zero or convergence to bigger angles depending on 
+		 * the influence of the hitPos. 
+		 */
+		
+		// determine new vector (angle and speed)
+		double speed = Math.sqrt(_speedX*_speedX+_speedY*_speedY); // Pythagoras c=speed
+		System.out.println("Old Speed: "+speed);
+		double angle = Math.atan(_speedY/Math.abs(_speedX)); // current angle in RAD
+		System.out.println(String.format("Old Angle: %.2f ",Math.toDegrees(angle)));
+		double newAngle = angle * (1+(hitPos)); // influence of the hit position
+		System.out.println(String.format("New Angle: %.2f",Math.toDegrees(newAngle)));
+		
+		// adapt speeds for constant total speed
+		_speedY = speed * Math.sin(newAngle);
+		System.out.println("New SpeedY: "+_speedY);
+		_speedX = Math.signum(_speedX) * speed * Math.cos(newAngle);
+		_speedX *= -1; // turn direction
+		System.out.println("New SpeedX: "+_speedX);
+		System.out.println();
+		//pauseGame();
+	}
+
+	/**
 	 * Increases score for the player who scored and resets the ball to the scorer's side. 
 	 * @param playerScored
 	 */
@@ -518,7 +545,7 @@ public class PongPane extends Pane implements InvalidationListener {
 		// hide ball
 		_ballAnimation.pause();
 		_ball.setVisible(false);
-		
+
 		// start from either side of the board
 		if (playerScored.equals(_playerLeft)) {
 			_ballCenterX.setValue(0.0+_ball.getBoundsInParent().getWidth());	
@@ -535,7 +562,7 @@ public class PongPane extends Pane implements InvalidationListener {
 		_ballCenterY.setValue(Math.random() * this.getHeight());
 		// random direction
 		_speedY = BALL_MOVE_INCREMENTS * (Math.random() < 0.5 ? 1 : -1);
-		
+
 		// short break
 		try { Thread.sleep(500);
 		} catch (InterruptedException e) {}

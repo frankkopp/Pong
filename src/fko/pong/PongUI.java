@@ -21,11 +21,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-package fko.pong.ui;
+package fko.pong;
 
 import java.io.IOException;
 
-import fko.pong.Pong;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -55,6 +54,14 @@ public class PongUI extends Application {
 	 */
 	public PongUI() {
 		// empty
+	}
+
+	/* (non-Javadoc)
+	 * @see javafx.application.Application#init()
+	 */
+	@Override
+	public void init() throws Exception {
+		super.init();
 	}
 
 	/**

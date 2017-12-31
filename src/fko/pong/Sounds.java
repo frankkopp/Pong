@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-package fko.pong.ui;
+package fko.pong;
 
 import java.net.URL;
 import java.util.Arrays;
@@ -35,8 +35,6 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineUnavailableException;
-
-import fko.pong.Pong;
 
 /**
  * This is an example program that demonstrates how to play back an audio file

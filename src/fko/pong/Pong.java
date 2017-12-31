@@ -23,7 +23,6 @@ SOFTWARE.
  */
 package fko.pong;
 
-import fko.pong.ui.PongUI;
 import javafx.application.Application;
 
 /**

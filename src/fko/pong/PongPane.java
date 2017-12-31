@@ -21,10 +21,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-package fko.pong.ui;
+package fko.pong;
 
-import fko.pong.Player;
-import fko.pong.ui.Sounds.Clips;
+import fko.pong.Sounds.Clips;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
@@ -433,7 +432,7 @@ public class PongPane extends Pane implements InvalidationListener {
 	private void moveBall() {
 		_ballCenterX.setValue(_ballCenterX.getValue() + _speedX);
 		_ballCenterY.setValue(_ballCenterY.getValue() + _speedY);
-		checkCollision(); // reverses _dx and/or _dy if collision
+		checkCollision();
 	}
 
 	/**

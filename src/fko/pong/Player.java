@@ -23,19 +23,25 @@ SOFTWARE.
  */
 package fko.pong;
 
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
 /**
  * @author Frank Kopp
  */
 public class Player {
 
-	public final String _playerName;
-	public int _points = 0;
+	public final StringProperty playerName = new SimpleStringProperty();
+	public final IntegerProperty points = new SimpleIntegerProperty();
 
 	/**
 	 * @param name
 	 */
 	public Player(String name) {
-		this._playerName = name;
+		playerName.set(name);
+		points.set(0);
 	}
 
 }

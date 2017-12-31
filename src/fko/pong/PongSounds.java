@@ -41,7 +41,7 @@ import javax.sound.sampled.LineUnavailableException;
  * using the Clip in Java Sound API.
  * @author www.codejava.net
  */
-public class Sounds {
+public class PongSounds {
 
 	// folder to all sound files
 	public static final String SOUND_FOLDER = "/sounds/";
@@ -75,7 +75,7 @@ public class Sounds {
 	/**
 	 * Create an object with all tetris sounds available 
 	 */
-	public Sounds() {
+	public PongSounds() {
 		_sounds = new HashMap<>();
 		// for all defined values in ENUM Clips
 		// read in the Clip and store them in the Map

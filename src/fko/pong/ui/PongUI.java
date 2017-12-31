@@ -25,11 +25,8 @@ package fko.pong.ui;
 
 import java.io.IOException;
 
-import com.sun.javafx.application.PlatformImpl;
-
 import fko.pong.Pong;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -50,42 +47,14 @@ import javafx.stage.WindowEvent;
  */
 public class PongUI extends Application {
 
-	// The singleton instance of this class
-	private static PongUI _instance = null; 	
-
 	// The primary stage
 	private static Stage _primaryStage;
 
 	/**
-	 * UI is a singleton and can't be created via constructor.<br> 
-	 * Use this <code>getInstance()</code> instead.
+	 * Constructor
 	 */
-	public static PongUI getInstance() {
-		if (_instance == null) {// singleton pattern 
-			_instance = new PongUI();
-		}
-		return _instance;
-	}
-
-	/**
-	 * Private constructor to accommodate the Singleton pattern
-	 */
-	private PongUI() {
-
-		// Startup the JavaFX platform
-		Platform.setImplicitExit(false);
-
-		PlatformImpl.startup(() -> {
-			_primaryStage = new Stage();
-			_primaryStage.setTitle("Pong by Frank Kopp (c)");
-			try {
-				start(_primaryStage);
-			} catch (IOException e) {
-				Pong.fatalError("Error while starting UI");
-			}
-		});
-
-		waitForUI(); // wait until primary stage is shown
+	public PongUI() {
+		// empty
 	}
 
 	/**
@@ -94,7 +63,10 @@ public class PongUI extends Application {
 	 */
 	@Override
 	public void start(Stage primaryStage) throws IOException {
-
+		
+		_primaryStage = primaryStage;
+		_primaryStage.setTitle("Pong by Frank Kopp (c)");
+		
 		// pong pane
 		PongPane pongpane = new PongPane();
 
@@ -142,20 +114,6 @@ public class PongUI extends Application {
 
 		// initialize Game
 		pongpane.initialize(optionsText);
-	}
-
-	/**
-	 * Waits for the UI to show.
-	 */
-	public void waitForUI() {
-		// wait for the UI to show before returning
-		do {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				//return;
-			}
-		} while (_primaryStage == null || !_primaryStage.isShowing());
 	}
 
 	/**

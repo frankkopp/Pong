@@ -53,14 +53,16 @@ public class Pong extends Application {
 		PongController controller = new PongController(model);
 		PongView view = new PongView(model, controller);
 
-		Scene scene = new Scene(view.asParent(), 400, 600); // TODO: bind this to field size
+		// FIX: how to set correct height so that middle pane gets it preferred size
+		Scene scene = new Scene(view.asParent(),600,432); 
 
 		// setup primary stage
 		primaryStage.setTitle("Pong by Frank Kopp (c)");
-		primaryStage.setMinWidth(600);
-		primaryStage.setMinHeight(400);
-		primaryStage.setMaxWidth(600);
-		primaryStage.setMaxHeight(380);
+		primaryStage.setResizable(false);
+//		primaryStage.setMinWidth(600);
+//		primaryStage.setMinHeight(454);
+//		primaryStage.setMaxWidth(600);
+//		primaryStage.setMaxHeight(454);
 
 		primaryStage.setScene(scene);
 		

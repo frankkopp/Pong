@@ -23,14 +23,10 @@ SOFTWARE.
  */
 package fko.pong;
 
-import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.geometry.Insets;
 import javafx.scene.Cursor;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -44,9 +40,7 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 /**
- * The PongPane handles the playing and screen output.<br>
- * It builds a board with two paddles, a ball a two scores.<br>
- * It adds controls by keyboard and mouse and also adds sound events.<br>
+ * The PongPane view.
  * @author Frank Kopp
  */
 public class PongPane extends Pane {
@@ -88,7 +82,7 @@ public class PongPane extends Pane {
 		// observe model values
 		model.getSoundOnOptionProperty().addListener((obs, oldX, newX) -> updateOptions());
 		model.getAnglePaddleOptionProperty().addListener((obs, oldX, newX) -> updateOptions());
-		view.optionsText.textProperty().bind(_optionsTextString);
+		this.view.optionsText.textProperty().bind(_optionsTextString);
 
 		addBall();
 		addPaddles();
@@ -125,41 +119,14 @@ public class PongPane extends Pane {
 	 */
 	private void addPaddles() {
 
-		// enable dragging of paddles with the mouse
-		EventHandler<MouseEvent> mouseDragHandler = new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent event) {
-				final Rectangle source = (Rectangle) event.getSource();
-				final EventType<? extends MouseEvent> eventType = event.getEventType();
-				// only the two paddles have these handler so we can do the simple if
-				DoubleProperty yProp = source.equals(_leftPaddle) ? model.getLeftPaddleYProperty() : model.getRightPaddleYProperty();
-				DoubleProperty paddleSize = source.equals(_leftPaddle) ? model.getLeftPaddleLengthProperty() : model.getRightPaddleLengthProperty();
-				// handle the three different mouse events
-				if (eventType.equals(MouseEvent.MOUSE_PRESSED) ) {
-					source.setCursor(Cursor.CLOSED_HAND);
-					_initialTranslateY = source.getTranslateY();
-					_initialDragAnchor = event.getSceneY();
-				} else if (eventType.equals(MouseEvent.MOUSE_DRAGGED) ) {
-					double dragY = event.getSceneY() - _initialDragAnchor;
-					// don't leave area
-					if (_initialTranslateY + dragY > source.getParent().getBoundsInLocal().getMinY() 
-							&& _initialTranslateY + dragY + paddleSize.get() < source.getParent().getBoundsInLocal().getMaxY() ) {
-						yProp.setValue(_initialTranslateY + dragY);
-					}
-				} else if (eventType.equals(MouseEvent.MOUSE_RELEASED) ) {
-					source.setCursor(Cursor.OPEN_HAND);
-				}
-			};
-		};
-		
 		_leftPaddle = new Rectangle(model.getPaddleWidth(), model.getLeftPaddleLength(), Color.WHITE);
 		_leftPaddle.heightProperty().bind(model.getLeftPaddleLengthProperty());
 		_leftPaddle.xProperty().bind(model.getLeftPaddleXProperty());
 		_leftPaddle.yProperty().bind(model.getLeftPaddleYProperty());
 		_leftPaddle.setCursor(Cursor.OPEN_HAND);
-		_leftPaddle.setOnMousePressed(mouseDragHandler); 
-		_leftPaddle.setOnMouseDragged(mouseDragHandler); 
-		_leftPaddle.setOnMouseReleased(mouseDragHandler);
+		_leftPaddle.setOnMousePressed(event -> controller.handleMouseEventsLeftPaddle(event)); 
+		_leftPaddle.setOnMouseDragged(event -> controller.handleMouseEventsLeftPaddle(event)); 
+		_leftPaddle.setOnMouseReleased(event -> controller.handleMouseEventsLeftPaddle(event));
 		this.getChildren().add(_leftPaddle);
 
 		_rightPaddle = new Rectangle(model.getPaddleWidth(), model.getRightPaddleLength(), Color.WHITE);
@@ -167,9 +134,9 @@ public class PongPane extends Pane {
 		_rightPaddle.xProperty().bind(model.getRightPaddleXProperty());
 		_rightPaddle.yProperty().bind(model.getRightPaddleYProperty());
 		_rightPaddle.setCursor(Cursor.OPEN_HAND);
-		_rightPaddle.setOnMousePressed(mouseDragHandler);
-		_rightPaddle.setOnMouseDragged(mouseDragHandler);
-		_rightPaddle.setOnMouseReleased(mouseDragHandler);
+		_rightPaddle.setOnMousePressed(event -> controller.handleMouseEventsRightPaddle(event));
+		_rightPaddle.setOnMouseDragged(event -> controller.handleMouseEventsRightPaddle(event));
+		_rightPaddle.setOnMouseReleased(event -> controller.handleMouseEventsRightPaddle(event));
 		this.getChildren().add(_rightPaddle);
 	}
 
@@ -204,7 +171,7 @@ public class PongPane extends Pane {
 		rightScore.setFill(color);
 
 		// position score text
-		leftScore.setX(middle - offsetFromMiddle - leftScore.getBoundsInParent().getWidth());
+		leftScore.setX(middle - offsetFromMiddle - 15);
 		rightScore.setX(middle + offsetFromMiddle);
 
 		// bind text to score property

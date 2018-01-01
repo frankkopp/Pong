@@ -41,7 +41,7 @@ public class PongModel {
 
 	private static final double 	INITIAL_PLAYFIELD_HEIGHT = 400.0;
 	private static final double 	INITIAL_PLAYFIELD_WIDTH = 600.0; 
-	
+
 	private static final double 	PADDLE_MOVE_STEPS = 2.0;
 	private static final double 	BALL_MOVE_INCREMENTS = 2.0;
 
@@ -60,13 +60,13 @@ public class PongModel {
 	// configuration of game objects
 	private DoubleProperty playfieldWidth = new SimpleDoubleProperty(INITIAL_PLAYFIELD_WIDTH);
 	private DoubleProperty playfieldHeight = new SimpleDoubleProperty(INITIAL_PLAYFIELD_HEIGHT);
-	
+
 	private DoubleProperty ballSize = new SimpleDoubleProperty(INITIAL_BALL_SIZE);
 	private DoubleProperty ballSpeed = new SimpleDoubleProperty(INITIAL_BALL_SPEED);
 
 	private DoubleProperty speedX = new SimpleDoubleProperty(BALL_MOVE_INCREMENTS);
 	private DoubleProperty speedY = new SimpleDoubleProperty(BALL_MOVE_INCREMENTS);
-	
+
 	private DoubleProperty paddleSpeed = new SimpleDoubleProperty(INITIAL_PADDLE_SPEED);
 
 	// The center points of the moving ball
@@ -95,7 +95,7 @@ public class PongModel {
 	private BooleanProperty gameRunning = new SimpleBooleanProperty(false);
 
 	// Options
-	private BooleanProperty soundOnOption 	 = new SimpleBooleanProperty(false);
+	private BooleanProperty soundOnOption 	 = new SimpleBooleanProperty(true);
 	private BooleanProperty anglePaddleOption = new SimpleBooleanProperty(true);
 
 	// animations
@@ -106,10 +106,44 @@ public class PongModel {
 	 * Holds all relevant information and does all relevant calculations for a Pong game.
 	 */
 	public PongModel() {
+		
+		// initial paddle positions
 		leftPaddleX.set(INITIAL_PADDLE_X);
 		rightPaddleX.bind(playfieldWidth.subtract(INITIAL_PADDLE_X).subtract(INITIAL_PADDLE_WIDTH));
+		leftPaddleY.set(playfieldHeight.get()/2 - leftPaddleLength.get()/2);
+		rightPaddleY.set(playfieldHeight.get()/2 - rightPaddleLength.get()/2);
+		
+		// initial ball position
 		ballCenterX.set(playfieldWidth.get()/2);
 		ballCenterY.set(playfieldHeight.get()/2);
+
+		// set sound option listener
+		soundOnOption.addListener((obs, oldX, newX) -> {
+			if (soundOnOption.get()) sounds.soundOn();
+			else sounds.soundOff();
+		});
+		
+		// initial options
+		soundOnOption.set(false);
+		anglePaddleOption.set(false);
+		
+		// start the paddle movements
+		paddleMovementTimeline.setCycleCount(Timeline.INDEFINITE);
+		KeyFrame movePaddle = 
+				new KeyFrame(Duration.seconds(1/paddleSpeed.get()), e -> { movePaddles();	});
+		paddleMovementTimeline.getKeyFrames().add(movePaddle);
+		paddleMovementTimeline.play();
+		
+		// prepare ball movements
+		ballMovementTimeline.setCycleCount(Timeline.INDEFINITE);
+		KeyFrame moveBall = 
+				new KeyFrame(Duration.seconds(1/ballSpeed.get()), e -> {	moveBall();	});
+		ballMovementTimeline.getKeyFrames().add(moveBall);
+		
+		// new players
+		playerLeft = new Player("Left");
+		playerRight = new Player("Right");
+
 	}
 
 	/**
@@ -122,8 +156,8 @@ public class PongModel {
 		if (gameRunning.get()) return;
 
 		// new players
-		playerLeft = new Player("Left");
-		playerRight = new Player("Right");
+		playerLeft.points.set(0);
+		playerRight.points.set(0);
 
 		// start from either side of the board
 		if (Math.random() < 0.5) {
@@ -139,18 +173,7 @@ public class PongModel {
 		speedY.set(BALL_MOVE_INCREMENTS * (Math.random() < 0.5 ? 1 : -1));
 
 		// start the ball movements
-		ballMovementTimeline.setCycleCount(Timeline.INDEFINITE);
-		KeyFrame moveBall = 
-				new KeyFrame(Duration.seconds(1/ballSpeed.get()), e -> {	moveBall();	});
-		ballMovementTimeline.getKeyFrames().add(moveBall);
 		ballMovementTimeline.play();
-
-		// start the paddle movements
-		paddleMovementTimeline.setCycleCount(Timeline.INDEFINITE);
-		KeyFrame movePaddle = 
-				new KeyFrame(Duration.seconds(1/paddleSpeed.get()), e -> { movePaddles();	});
-		paddleMovementTimeline.getKeyFrames().add(movePaddle);
-		paddleMovementTimeline.play();
 
 		gamePaused.set(false);
 		gameRunning.set(true);
@@ -224,50 +247,50 @@ public class PongModel {
 		double xMin = ballCenterX.get() - ballSize.get();
 		double xMax = ballCenterX.get() + ballSize.get();
 		double yMin = ballCenterY.get() - ballSize.get();
-		double yMax = ballCenterX.get() + ballSize.get();
-
-		// hit left or right wall
-		if (xMax < 0 || xMin > playfieldWidth.get()) {
-			sounds.playClip(Clips.GOAL);
-			speedX.set(speedX.get() * -1);
-			goal(xMin < 0 ? playerRight : playerLeft);
-		}
+		double yMax = ballCenterY.get() + ballSize.get();
 
 		// hit top or bottom wall
 		if (yMin < 0 || yMax > playfieldHeight.get()) {
 			sounds.playClip(Clips.WALL);
 			speedY.set(speedY.get() * -1);
 		}
+		
+		// hit left or right wall
+		if (xMax < 0 || xMin > playfieldWidth.get()) {
+			sounds.playClip(Clips.GOAL);
+			//speedX.set(speedX.get() * -1);
+			goal(xMin < 0 ? playerRight : playerLeft);
+		}
 
-		// hit on a paddle - left
-		if (speedX.get() < 0 // moving left
-				&& (ballCenterX.get()-ballSize.get()) == (leftPaddleX.get()+INITIAL_PADDLE_WIDTH)) {
-
-			sounds.playClip(Clips.LEFT);
-			updateBallSpeedAfterPaddleHit();
-
-			// new direction
-			if (anglePaddleOption.get()) {
-				newVector(leftPaddleY);
-			} else {
-				// just changed direction - angle is always constant
-				speedY.set(speedY.get() * -1);
-			}
-		} // hit on a paddle - right
-		else if (speedX.get() > 0 
-				&& (ballCenterX.get()+ballSize.get()) == (rightPaddleX.get()-INITIAL_PADDLE_WIDTH)) {
-
-			sounds.playClip(Clips.RIGHT);
-			updateBallSpeedAfterPaddleHit();
-
-			// new direction
-			if (anglePaddleOption.get()) {
-				newVector(rightPaddleY);
-			} else {
-				// just changed direction - angle is always constant
-				speedY.set(speedY.get() * -1);
-			}
-		} 
+//		// hit on a paddle - left
+//		if (speedX.get() < 0 // moving left
+//				&& (ballCenterX.get()-ballSize.get()) == (leftPaddleX.get()+INITIAL_PADDLE_WIDTH)) {
+//
+//			sounds.playClip(Clips.LEFT);
+//			updateBallSpeedAfterPaddleHit();
+//
+//			// new direction
+//			if (anglePaddleOption.get()) {
+//				newVector(leftPaddleY);
+//			} else {
+//				// just changed direction - angle is always constant
+//				speedY.set(speedY.get() * -1);
+//			}
+//		} // hit on a paddle - right
+//		else if (speedX.get() > 0 
+//				&& (ballCenterX.get()+ballSize.get()) == (rightPaddleX.get()-INITIAL_PADDLE_WIDTH)) {
+//
+//			sounds.playClip(Clips.RIGHT);
+//			updateBallSpeedAfterPaddleHit();
+//
+//			// new direction
+//			if (anglePaddleOption.get()) {
+//				newVector(rightPaddleY);
+//			} else {
+//				// just changed direction - angle is always constant
+//				speedY.set(speedY.get() * -1);
+//			}
+//		} 
 	}
 
 	/**
@@ -287,7 +310,7 @@ public class PongModel {
 
 		System.out.println("Old SpeedY: "+speedY.toString());
 		System.out.println("Old SpeedX: "+speedX.toString());
-		
+
 		double paddleLength;
 		if (paddle.equals(leftPaddleY)) {
 			paddleLength = leftPaddleLength.get();
@@ -360,7 +383,6 @@ public class PongModel {
 		ballMovementTimeline.play();
 	}
 
-
 	/* ************************************************************
 	 * GETTER / SETTER
 	 * ************************************************************/
@@ -385,7 +407,7 @@ public class PongModel {
 	public void setPlayfieldWidth(double value) {
 		this.playfieldWidth.set(value);
 	}
-	
+
 	/**
 	 * @return the playfield width property
 	 */
@@ -406,7 +428,7 @@ public class PongModel {
 	public void setPlayfieldHeight(double value) {
 		this.playfieldHeight.set(value);
 	}
-	
+
 	/**
 	 * @return the ballSpeed property
 	 */
@@ -427,7 +449,7 @@ public class PongModel {
 	public void setBallSpeed(double ballSpeed) {
 		this.ballSpeed.set(ballSpeed);
 	}
-	
+
 	/**
 	 * @return the ballSpeed property
 	 */
@@ -532,7 +554,7 @@ public class PongModel {
 	public void setLeftPaddleLength(double value) {
 		this.leftPaddleLength.set(value);
 	}
-	
+
 	/**
 	 * @return paddle size property
 	 */
@@ -698,6 +720,11 @@ public class PongModel {
 	 * @param leftPaddleY the leftPaddleY to set
 	 */
 	public void setLeftPaddleY(double leftPaddleY) {
+		if (leftPaddleY < 0) {
+			leftPaddleY = 0;
+		} else if (leftPaddleY + leftPaddleLength.get() > playfieldHeight.get()) { 
+			leftPaddleY = playfieldHeight.get() - leftPaddleLength.get();
+		}
 		this.leftPaddleY.set(leftPaddleY);
 	}
 
@@ -740,6 +767,11 @@ public class PongModel {
 	 * @param rightPaddleY the rightPaddleY to set
 	 */
 	public void setRightPaddleY(double rightPaddleY) {
+		if (rightPaddleY < 0) {
+			rightPaddleY = 0;
+		} else if (rightPaddleY + rightPaddleLength.get() > playfieldHeight.get()) { 
+			rightPaddleY = playfieldHeight.get() - leftPaddleLength.get();
+		}
 		this.rightPaddleY.set(rightPaddleY);
 	}
 

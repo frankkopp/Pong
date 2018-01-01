@@ -23,11 +23,9 @@ SOFTWARE.
  */
 package fko.pong;
 
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
@@ -37,6 +35,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 
 /**
+ * The Pong view.
  * @author Frank Kopp
  */
 public class PongView {
@@ -62,7 +61,7 @@ public class PongView {
 				new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
 
 		// pong pane
-		PongPane pongpane = new PongPane(model, controller, this);
+		PongPane pongpane = new PongPane(this.model , this.controller, this);
 		view.setCenter(pongpane);
 
 		// add a two line hbox for how-to and options
@@ -84,38 +83,8 @@ public class PongView {
 	 */
 	public void addInputHandler() {
 		// set key event to control game and move flags
-		view.getScene().setOnKeyPressed(new EventHandler<KeyEvent>() {
-			@Override
-			public void handle(KeyEvent event) {
-				switch (event.getCode()) {
-				// game control
-				case SPACE: controller.startGameAction(); break;
-				case ESCAPE: controller.stopGameAction(); break;
-				case P: controller.pauseGameAction(); break;
-				// options control
-				case DIGIT1: controller.soundOnOptionAction(); break;
-				case DIGIT2: controller.anglePaddleOptionAction(); break;
-				// paddle control
-				case Q: 		controller.onLeftPaddleUpAction(); break;
-				case A:		controller.onLeftPaddleDownAction(); break;
-				case UP:	 	controller.onRightPaddleUpAction(); break;
-				case DOWN:  controller.onRightPaddleDownAction(); break;
-				default:
-				}
-			}
-		});
-		view.getScene().setOnKeyReleased(new EventHandler<KeyEvent>() {
-			@Override
-			public void handle(KeyEvent event) {
-				switch (event.getCode()) {
-				case Q: 		controller.onLeftPaddleUpAction(); break;
-				case A:		controller.onLeftPaddleDownAction(); break;
-				case UP:	 	controller.onRightPaddleUpAction(); break;
-				case DOWN:  controller.onRightPaddleDownAction(); break;
-				default:
-				}
-			}
-		});
+		view.getScene().setOnKeyPressed(e -> controller.handleKeyboardPressedEvents(e));
+		view.getScene().setOnKeyReleased(e -> controller.handleKeyboardReleasedEvents(e));
 	}
 
 	/**

@@ -23,6 +23,12 @@ SOFTWARE.
  */
 package fko.pong;
 
+import javafx.beans.property.DoubleProperty;
+import javafx.event.EventType;
+import javafx.scene.Cursor;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.WindowEvent;
 
 /**
@@ -31,84 +37,171 @@ import javafx.stage.WindowEvent;
  * @author Frank Kopp
  */
 public class PongController {
-	
+
 	private PongModel model;
+
+	// helper for drag event
+	private double initialY;
+	private double _initialDragAnchor;
 
 	/**
 	 * @param model
 	 */
 	public PongController(PongModel model) {
 		this.model = model;
-		
+
 	}
 
 	/**
 	 * 
 	 */
 	public void startGameAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());
+		model.startGame();
 	}
 
 	/**
 	 * 
 	 */
 	public void stopGameAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());
+		model.stopGame();
 	}
 
 	/**
 	 * 
 	 */
 	public void pauseGameAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());		
+		if (model.isGameRunning() && !model.isGamePaused()) model.pauseGame();
+		else if  (model.isGameRunning() && model.isGamePaused()) model.resumeGame();
 	}
 
 	/**
 	 * 
 	 */
 	public void soundOnOptionAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());
-//		// sound
-//		if (_soundOn.get()) {
-//			_sounds.soundOn();
-//		} else {
-//			_sounds.soundOff();
-//		}	
+		model.setSoundOnOption(!model.getSoundOnOption());
 	}
 
 	/**
 	 * 
 	 */
 	public void anglePaddleOptionAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());
+		model.setAnglePaddleOption(!model.getAnglePaddleOption());
 	}
 
 	/**
+	 * @param b 
 	 * 
 	 */
-	public void onLeftPaddleUpAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());
+	public void onLeftPaddleUpAction(boolean b) {
+		if (b) model.setLeftPaddleUp(true);
+		else model.setLeftPaddleUp(false);
 	}
 
 	/**
+	 * @param b 
 	 * 
 	 */
-	public void onLeftPaddleDownAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());
+	public void onLeftPaddleDownAction(boolean b) {
+		if (b) model.setLeftPaddleDown(true);
+		else model.setLeftPaddleDown(false);
 	}
 
 	/**
+	 * @param b 
 	 * 
 	 */
-	public void onRightPaddleUpAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());		
+	public void onRightPaddleUpAction(boolean b) {
+		if (b) model.setRightPaddleUp(true);
+		else model.setRightPaddleUp(false);
 	}
 
 	/**
+	 * @param b 
 	 * 
 	 */
-	public void onRightPaddleDownAction() {
-		System.out.println (new Exception().getStackTrace()[0].getMethodName());		
+	public void onRightPaddleDownAction(boolean b) {
+		if (b) model.setRightPaddleDown(true);
+		else model.setRightPaddleDown(false);
+	}
+
+	/**
+	 * Handles keyboard pressed events
+	 * @param event
+	 */
+	public void handleKeyboardPressedEvents(KeyEvent event) {
+		switch (event.getCode()) {
+		// game control
+		case SPACE: 	startGameAction(); break;
+		case ESCAPE:	stopGameAction(); break;
+		case P: 		pauseGameAction(); break;
+		// options control
+		case DIGIT1: soundOnOptionAction(); break;
+		case DIGIT2: anglePaddleOptionAction(); break;
+		// paddle control
+		case Q: 		onLeftPaddleUpAction(true); break;
+		case A:		onLeftPaddleDownAction(true); break;
+		case UP:	 	onRightPaddleUpAction(true); break;
+		case DOWN:  onRightPaddleDownAction(true); break;
+		default:
+		}
+	}
+
+	/**
+	 * Handles keyboard released events
+	 * @param event
+	 */
+	public void handleKeyboardReleasedEvents(KeyEvent event) {
+		switch (event.getCode()) {
+		case Q: 		onLeftPaddleUpAction(false); break;
+		case A:		onLeftPaddleDownAction(false); break;
+		case UP:	 	onRightPaddleUpAction(false); break;
+		case DOWN:  onRightPaddleDownAction(false); break;
+		default:
+		}
+	}
+
+	/**
+	 * Handles mouse  events
+	 * @param event
+	 */
+	public void handleMouseEventsLeftPaddle(MouseEvent event) {
+		handleMouseEvent(event, model.getLeftPaddleYProperty());
+	}
+
+	/**
+	 * Handles mouse  events
+	 * @param event
+	 */
+	public void handleMouseEventsRightPaddle(MouseEvent event) {
+		handleMouseEvent(event, model.getRightPaddleYProperty());
+	}
+
+	/**
+	 * @param event
+	 * @param paddle 
+	 */
+	private void handleMouseEvent(MouseEvent event, DoubleProperty paddleYProperty) {
+		final Rectangle source = (Rectangle) event.getSource();
+		final EventType<? extends MouseEvent> eventType = event.getEventType();
+
+		// handle the three different mouse events
+		if (eventType.equals(MouseEvent.MOUSE_PRESSED) ) {
+			source.setCursor(Cursor.CLOSED_HAND);
+			initialY = source.getY();
+			_initialDragAnchor = event.getSceneY();
+
+		} else if (eventType.equals(MouseEvent.MOUSE_DRAGGED) ) {
+			double dragY = event.getSceneY() - _initialDragAnchor;
+			// don't leave area
+			//System.out.println("InitialY: "+initialY+" DRAG: "+dragY);	
+			if (paddleYProperty.equals(model.getLeftPaddleYProperty())) {
+				model.setLeftPaddleY(initialY + dragY);
+			} else {
+				model.setRightPaddleY(initialY + dragY);
+			}
+		} else if (eventType.equals(MouseEvent.MOUSE_RELEASED) ) {
+			source.setCursor(Cursor.OPEN_HAND);
+		}
 	}
 
 	/**

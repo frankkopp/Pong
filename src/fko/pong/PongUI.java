@@ -21,15 +21,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-package fko.pong.ui;
+package fko.pong;
 
 import java.io.IOException;
 
-import com.sun.javafx.application.PlatformImpl;
-
-import fko.pong.Pong;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -37,6 +33,7 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -49,42 +46,22 @@ import javafx.stage.WindowEvent;
  */
 public class PongUI extends Application {
 
-	// The singleton instance of this class
-	private static PongUI _instance = null; 	
-
 	// The primary stage
 	private static Stage _primaryStage;
 
 	/**
-	 * UI is a singleton and can't be created via constructor.<br> 
-	 * Use this <code>getInstance()</code> instead.
+	 * Constructor
 	 */
-	public static PongUI getInstance() {
-		if (_instance == null) {// singleton pattern 
-			_instance = new PongUI();
-		}
-		return _instance;
+	public PongUI() {
+		// empty
 	}
 
-	/**
-	 * Private constructor to accommodate the Singleton pattern
+	/* (non-Javadoc)
+	 * @see javafx.application.Application#init()
 	 */
-	private PongUI() {
-
-		// Startup the JavaFX platform
-		Platform.setImplicitExit(false);
-
-		PlatformImpl.startup(() -> {
-			_primaryStage = new Stage();
-			_primaryStage.setTitle("Pong by Frank Kopp (c)");
-			try {
-				start(_primaryStage);
-			} catch (IOException e) {
-				Pong.fatalError("Error while starting UI");
-			}
-		});
-
-		waitForUI(); // wait until primary stage is shown
+	@Override
+	public void init() throws Exception {
+		super.init();
 	}
 
 	/**
@@ -93,20 +70,34 @@ public class PongUI extends Application {
 	 */
 	@Override
 	public void start(Stage primaryStage) throws IOException {
-
+		
+		_primaryStage = primaryStage;
+		_primaryStage.setTitle("Pong by Frank Kopp (c)");
+		
 		// pong pane
 		PongPane pongpane = new PongPane();
-		
+
 		// Create root pane for the Scene
 		BorderPane _root = new BorderPane(pongpane);
 		_root.setBackground(new Background(
 				new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
-		
+
+
+		// add a two line hbox for how-to and options
+		VBox vBox = new VBox();
+		vBox.setAlignment(Pos.CENTER);
+
 		// add game how-to
-		Text text = new Text("SPACE=Start ESC=Stop P=Pause Q=left up A=left down UP=right up DOWN=right down");
-		_root.setBottom(text);
-		BorderPane.setAlignment(text, Pos.CENTER);
+		Text howtoText = new Text("SPACE=Start ESC=Stop P=Pause Q=left up A=left down UP=right up DOWN=right down");
+		vBox.getChildren().add(howtoText);
 		
+		// add game options
+		Text optionsText = new Text("Options");
+		vBox.getChildren().add(optionsText);
+
+		_root.setBottom(vBox);
+		BorderPane.setAlignment(vBox, Pos.CENTER);
+
 		// Create the Scene
 		Scene scene = new Scene(_root, 600, 400);
 
@@ -116,9 +107,9 @@ public class PongUI extends Application {
 		_primaryStage.setMaxWidth(600);
 		_primaryStage.setMaxHeight(380);
 
-		// pu the scene on the primary stage
+		// put the scene on the primary stage
 		_primaryStage.setScene(scene);
-		
+
 		// closeAction - close through close action
 		scene.getWindow().setOnCloseRequest(event -> {
 			close_action(event);
@@ -129,21 +120,7 @@ public class PongUI extends Application {
 		_primaryStage.show();
 
 		// initialize Game
-		pongpane.initialize();
-	}
-
-	/**
-	 * Waits for the UI to show.
-	 */
-	public void waitForUI() {
-		// wait for the UI to show before returning
-		do {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				//return;
-			}
-		} while (_primaryStage == null || !_primaryStage.isShowing());
+		pongpane.initialize(optionsText);
 	}
 
 	/**
@@ -152,11 +129,11 @@ public class PongUI extends Application {
 	public static Stage getPrimaryStage() {
 		return _primaryStage;
 	}
-	
+
 	/* ********************************
 	 * ACTIONS
 	 * ********************************/
-	
+
 	/**
 	 * @param event
 	 */

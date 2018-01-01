@@ -262,35 +262,41 @@ public class PongModel {
 			goal(xMin < 0 ? playerRight : playerLeft);
 		}
 
-//		// hit on a paddle - left
-//		if (speedX.get() < 0 // moving left
-//				&& (ballCenterX.get()-ballSize.get()) == (leftPaddleX.get()+INITIAL_PADDLE_WIDTH)) {
-//
-//			sounds.playClip(Clips.LEFT);
-//			updateBallSpeedAfterPaddleHit();
-//
-//			// new direction
-//			if (anglePaddleOption.get()) {
-//				newVector(leftPaddleY);
-//			} else {
-//				// just changed direction - angle is always constant
-//				speedY.set(speedY.get() * -1);
-//			}
-//		} // hit on a paddle - right
-//		else if (speedX.get() > 0 
-//				&& (ballCenterX.get()+ballSize.get()) == (rightPaddleX.get()-INITIAL_PADDLE_WIDTH)) {
-//
-//			sounds.playClip(Clips.RIGHT);
-//			updateBallSpeedAfterPaddleHit();
-//
-//			// new direction
-//			if (anglePaddleOption.get()) {
-//				newVector(rightPaddleY);
-//			} else {
-//				// just changed direction - angle is always constant
-//				speedY.set(speedY.get() * -1);
-//			}
-//		} 
+		// hit on a paddle - left
+		if (speedX.get() < 0 // moving left
+				&& (ballCenterX.get()-ballSize.get()) == (leftPaddleX.get()+INITIAL_PADDLE_WIDTH) 
+				&& (ballCenterY.get()+ballSize.get() > leftPaddleY.get())
+				&& (ballCenterY.get()-ballSize.get() < leftPaddleY.get()+leftPaddleLength.get())) {
+
+			sounds.playClip(Clips.LEFT);
+			
+			updateBallSpeedAfterPaddleHit();
+
+			// new direction
+			if (anglePaddleOption.get()) {
+				newVector(leftPaddleY);
+			} else {
+				// just changed direction - angle is always constant
+				speedX.set(speedX.get() * -1);
+			}
+		} // hit on a paddle - right
+		else if (speedX.get() > 0 // moving right
+				&& (ballCenterX.get()+ballSize.get()) == (rightPaddleX.get()) 
+				&& (ballCenterY.get()+ballSize.get() > rightPaddleY.get())
+				&& (ballCenterY.get()-ballSize.get() < rightPaddleY.get()+leftPaddleLength.get())) {
+
+			sounds.playClip(Clips.RIGHT);
+			
+			updateBallSpeedAfterPaddleHit();
+
+			// new direction
+			if (anglePaddleOption.get()) {
+				newVector(rightPaddleY);
+			} else {
+				// just changed direction - angle is always constant
+				speedX.set(speedX.get() * -1);
+			}
+		} 
 	}
 
 	/**

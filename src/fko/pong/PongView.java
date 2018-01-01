@@ -23,12 +23,9 @@ SOFTWARE.
  */
 package fko.pong;
 
-import java.io.IOException;
-
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
+import javafx.scene.Parent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
@@ -36,52 +33,36 @@ import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
-import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
 /**
- * 
+ * The Pong view.
  * @author Frank Kopp
- *
  */
-public class PongUI extends Application {
+public class PongView {
 
-	// The primary stage
-	private static Stage _primaryStage;
-
-	/**
-	 * Constructor
-	 */
-	public PongUI() {
-		// empty
-	}
-
-	/* (non-Javadoc)
-	 * @see javafx.application.Application#init()
-	 */
-	@Override
-	public void init() throws Exception {
-		super.init();
-	}
+	private final PongModel model;
+	private final PongController controller;
+	private final BorderPane view;
+	
+	protected Text optionsText =  new Text("Options");
 
 	/**
-	 * Standard way to start a JavaFX application. Is called in the constructor.
-	 * @throws IOException 
+	 * @param model
+	 * @param controller
 	 */
-	@Override
-	public void start(Stage primaryStage) throws IOException {
-		
-		_primaryStage = primaryStage;
-		_primaryStage.setTitle("Pong by Frank Kopp (c)");
-		
-		// pong pane
-		PongPane pongpane = new PongPane();
+	public PongView(PongModel model, PongController controller) {
 
-		// Create root pane for the Scene
-		BorderPane _root = new BorderPane(pongpane);
-		_root.setBackground(new Background(
+		this.model = model;
+		this.controller = controller;
+
+		// setup main view
+		view = new BorderPane();
+		view.setBackground(new Background(
 				new BackgroundFill(Color.DARKGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
 
+		// pong pane
+		PongPane pongpane = new PongPane(this.model , this.controller, this);
+		view.setCenter(pongpane);
 
 		// add a two line hbox for how-to and options
 		VBox vBox = new VBox();
@@ -90,55 +71,28 @@ public class PongUI extends Application {
 		// add game how-to
 		Text howtoText = new Text("SPACE=Start ESC=Stop P=Pause Q=left up A=left down UP=right up DOWN=right down");
 		vBox.getChildren().add(howtoText);
-		
-		// add game options
-		Text optionsText = new Text("Options");
+
 		vBox.getChildren().add(optionsText);
 
-		_root.setBottom(vBox);
+		view.setBottom(vBox);
 		BorderPane.setAlignment(vBox, Pos.CENTER);
-
-		// Create the Scene
-		Scene scene = new Scene(_root, 600, 400);
-
-		// set the minimum size
-		_primaryStage.setMinWidth(600);
-		_primaryStage.setMinHeight(400);
-		_primaryStage.setMaxWidth(600);
-		_primaryStage.setMaxHeight(380);
-
-		// put the scene on the primary stage
-		_primaryStage.setScene(scene);
-
-		// closeAction - close through close action
-		scene.getWindow().setOnCloseRequest(event -> {
-			close_action(event);
-			event.consume();
-		});
-
-		// now show the window
-		_primaryStage.show();
-
-		// initialize Game
-		pongpane.initialize(optionsText);
 	}
 
 	/**
-	 * @return the primary stage which has been stored as a static field
+	 * @param controller
 	 */
-	public static Stage getPrimaryStage() {
-		return _primaryStage;
+	public void addInputHandler() {
+		// set key event to control game and move flags
+		view.getScene().setOnKeyPressed(e -> controller.handleKeyboardPressedEvents(e));
+		view.getScene().setOnKeyReleased(e -> controller.handleKeyboardReleasedEvents(e));
 	}
 
-	/* ********************************
-	 * ACTIONS
-	 * ********************************/
-
 	/**
-	 * @param event
+	 * Returns the main view panel
+	 * @return main view panel
 	 */
-	public void close_action(WindowEvent event) {
-		Pong.exit();
+	public Parent asParent() {
+		return view ;
 	}
 
 }

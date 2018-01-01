@@ -24,67 +24,104 @@ SOFTWARE.
 package fko.pong;
 
 import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 /**
  * 
  * @author Frank Kopp
  */
-public class Pong {
+public class Pong extends Application {
 
 	// VERSION
 	public static final String VERSION = "1.1"; 
-	
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Application.launch(PongUI.class, args);
+		launch(args);
 	}
-	
-	 /**
-     * Clean up and exit the application
-     */
-    public static void exit() {
-    		exit(0);
-    }
 
-    /**
-     * Clean up and exit the application
-     */
-    private static void exit(int returnCode) {
-        // nothing to clean up yet
-        System.exit(returnCode);
-    }
-    
-    /**
-     * Called when there is an unexpected unrecoverable error.<br/>
-     * Prints a stack trace together with a provided message.<br/>
-     * Terminates with <tt>exit(1)</tt>.
-     * @param message to be displayed with the exception message
-     */
-    public static void fatalError(String message) {
-        Exception e = new Exception(message);
-        e.printStackTrace();
-        exit(1);
-    }
+	/**
+	 * @see javafx.application.Application#start(javafx.stage.Stage)
+	 */
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		
+		PongModel model = new PongModel();
+		PongController controller = new PongController(model);
+		PongView view = new PongView(model, controller);
 
-    /**
-     * Called when there is an unexpected but recoverable error.<br/>
-     * Prints a stack trace together with a provided message.<br/>
-     * @param message to be displayed with the exception message
-     */
-    public static void criticalError(String message) {
-        Exception e = new Exception(message);
-        e.printStackTrace();
-    }
-    
-    /**
-     * Called when there is an unexpected minor error.<br/>
-     * Prints a provided message.<br/>
-     * @param message to be displayed
-     */
-    public static void minorError(String message) {
-        System.err.println(message);
-    }
-	
+		// FIX: how to set correct height so that middle pane gets it preferred size
+		Scene scene = new Scene(view.asParent(),600,432); 
+
+		// setup primary stage
+		primaryStage.setTitle("Pong by Frank Kopp (c)");
+		primaryStage.setResizable(false);
+//		primaryStage.setMinWidth(600);
+//		primaryStage.setMinHeight(454);
+//		primaryStage.setMaxWidth(600);
+//		primaryStage.setMaxHeight(454);
+
+		primaryStage.setScene(scene);
+		
+		// closeAction - close through close action
+		scene.getWindow().setOnCloseRequest(event -> {
+			controller.close_action(event);
+			event.consume();
+		});
+		
+		// let the view register the keyboard handler
+		view.addInputHandler();
+		
+		primaryStage.show();
+	}
+
+	/**
+	 * Clean up and exit the application
+	 */
+	public static void exit() {
+		exit(0);
+	}
+
+	/**
+	 * Clean up and exit the application
+	 */
+	private static void exit(int returnCode) {
+		// nothing to clean up yet
+		System.exit(returnCode);
+	}
+
+	/**
+	 * Called when there is an unexpected unrecoverable error.<br/>
+	 * Prints a stack trace together with a provided message.<br/>
+	 * Terminates with <tt>exit(1)</tt>.
+	 * @param message to be displayed with the exception message
+	 */
+	public static void fatalError(String message) {
+		Exception e = new Exception(message);
+		e.printStackTrace();
+		exit(1);
+	}
+
+	/**
+	 * Called when there is an unexpected but recoverable error.<br/>
+	 * Prints a stack trace together with a provided message.<br/>
+	 * @param message to be displayed with the exception message
+	 */
+	public static void criticalError(String message) {
+		Exception e = new Exception(message);
+		e.printStackTrace();
+	}
+
+	/**
+	 * Called when there is an unexpected minor error.<br/>
+	 * Prints a provided message.<br/>
+	 * @param message to be displayed
+	 */
+	public static void minorError(String message) {
+		System.err.println(message);
+	}
+
 }
